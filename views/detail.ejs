@@ -1,0 +1,73 @@
+<%- include("partials/open", { title: cert.projectTarget }) %>
+<article class="receipt">
+  <header class="receipt-head">
+    <div>
+      <p class="eyebrow">Cold case receipt</p>
+      <h1><%= cert.projectTarget %></h1>
+      <p class="meta-line">Version <%= cert.currentVersion %> · submitted by @<%= cert.submitterLogin %> · <%= new Date(cert.createdAt).toLocaleString() %></p>
+      <p class="meta-line">
+        <a href="/api/cases/<%= cert.id %>">API JSON</a>
+        ·
+        <a href="/api/cases/<%= cert.id %>/canonical">Canonical JSON</a>
+      </p>
+    </div>
+    <% if (canAmend) { %>
+      <a class="button" href="/cases/<%= cert.id %>/amend">Amend</a>
+    <% } %>
+  </header>
+
+  <% if (cert.hidden) { %>
+    <div class="notice">Hidden by admin. Reason: <%= cert.hiddenReason || "not specified" %></div>
+  <% } %>
+
+  <dl class="receipt-grid">
+    <div><dt>Failure class</dt><dd><%= cert.failureClass %></dd></div>
+    <div><dt>Client record ID</dt><dd><%= cert.clientRecordId || "not supplied" %></dd></div>
+    <div><dt>Project namespace</dt><dd><%= cert.projectNamespace || "not supplied" %></dd></div>
+    <div><dt>Run ID</dt><dd><%= cert.runId || "not supplied" %></dd></div>
+    <div><dt>Tags</dt><dd><%= cert.tags.length ? cert.tags.join(", ") : "not supplied" %></dd></div>
+    <div><dt>Artifact kind</dt><dd><%= cert.artifactKind || "not supplied" %></dd></div>
+    <div><dt>Artifact label</dt><dd><%= cert.artifactLabel || "not supplied" %></dd></div>
+    <div><dt>Artifact size</dt><dd><%= cert.artifactSizeBytes === null || cert.artifactSizeBytes === undefined ? "not supplied" : cert.artifactSizeBytes + " bytes" %></dd></div>
+    <div><dt>Artifact reference</dt><dd><code class="wrap"><%= cert.artifactUri || cert.hostedZipUrl || "not supplied" %></code></dd></div>
+    <div><dt>Command</dt><dd><code><%= cert.command %></code></dd></div>
+    <div><dt>Metric</dt><dd><%= cert.metric %></dd></div>
+    <div><dt>Failure reason</dt><dd><%= cert.failureReason %></dd></div>
+    <div><dt>Revive condition</dt><dd><%= cert.reviveCondition %></dd></div>
+    <div><dt>Provenance</dt><dd><%= cert.provenance %></dd></div>
+    <div><dt>Research repo</dt><dd><a href="<%= cert.repoUrl %>" rel="nofollow ugc"><%= cert.repoUrl %></a></dd></div>
+    <div><dt>Hosted zip</dt><dd><% if (cert.hostedZipUrl) { %><a href="<%= cert.hostedZipUrl %>" rel="nofollow ugc"><%= cert.hostedZipUrl %></a><% } else { %>not supplied<% } %></dd></div>
+    <div><dt>Submitter-provided zip SHA256</dt><dd><code class="wrap"><%= cert.zipSha256 %></code></dd></div>
+  </dl>
+
+  <section>
+    <h2>Canonical JSON</h2>
+    <pre class="json"><code><%= cert.canonicalJson %></code></pre>
+  </section>
+
+  <section>
+    <h2>Event History</h2>
+    <ol class="events">
+      <% cert.events.forEach((event) => { %>
+        <li>
+          <strong><%= event.eventType %></strong>
+          <% if (event.version) { %>v<%= event.version %><% } %>
+          by @<%= event.actorLogin %>
+          on <%= new Date(event.createdAt).toLocaleString() %>
+          <% if (event.reason) { %><span> · <%= event.reason %></span><% } %>
+        </li>
+      <% }) %>
+    </ol>
+  </section>
+
+  <% if (isAdmin && !cert.hidden) { %>
+    <form class="hide-form" method="post" action="/cases/<%= cert.id %>/hide">
+      <label>
+        Hide reason
+        <input name="reason" placeholder="spam or abuse reason">
+      </label>
+      <button type="submit" class="button danger">Hide</button>
+    </form>
+  <% } %>
+</article>
+<%- include("partials/close") %>

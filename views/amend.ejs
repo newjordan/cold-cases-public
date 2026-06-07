@@ -1,0 +1,3 @@
+<%- include("partials/open", { title: "Amend cold case" }) %>
+<%- include("partials/form", { action: "/cases/" + cert.id + "/amend", heading: "Amend cold case", cert, errors }) %>
+<%- include("partials/close") %>

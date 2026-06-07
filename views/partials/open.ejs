@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title><%= title ? `${title} · Cold Cases` : "Cold Cases" %></title>
+    <meta name="description" content="A metadata-only dump and retrieval point for research cold cases: failed, abandoned, and stale-looped attempts, with revive conditions and artifact references — pull and share the worm between researchers.">
+    <meta property="og:title" content="<%= title || "Cold Cases" %>">
+    <meta property="og:description" content="Pull prior failures, metrics, and revive conditions. Share the cold-case worm between researchers. Metadata only — no payloads.">
+    <meta property="og:type" content="website">
+    <meta name="theme-color" content="#ff7a1a">
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+    <link rel="stylesheet" href="/styles.css">
+  </head>
+  <body>
+    <header class="topbar">
+      <a class="brand" href="/">
+        <span class="mark">cc</span>
+        <span>Cold Cases</span>
+      </a>
+      <nav>
+        <% if (user) { %>
+          <a class="button primary" href="/submit">Submit</a>
+          <form class="nav-auth" action="/logout" method="post"><button type="submit" class="button ghost">@<%= user.login %> · sign out</button></form>
+        <% } else { %>
+          <a class="button ghost" href="/login">GitHub login</a>
+        <% } %>
+      </nav>
+    </header>
+    <main>

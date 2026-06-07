@@ -1,0 +1,30 @@
+{
+  "name": "cold-cases",
+  "version": "1.0.0",
+  "description": "Public index for direct-published research cold cases.",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "build": "node scripts/build-check.js",
+    "seed:quantum": "node scripts/seed-quantum-coldcases.js",
+    "publish:public-relay": "node scripts/publish-public-relay.js",
+    "export:public-relay": "node scripts/export-public-relay.js",
+    "test": "node --test"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "better-sqlite3": "^12.10.0",
+    "ejs": "^6.0.1",
+    "express": "^5.2.1",
+    "express-session": "^1.19.0",
+    "helmet": "^8.2.0",
+    "morgan": "^1.11.0",
+    "passport": "^0.7.0",
+    "passport-github2": "^0.1.12"
+  },
+  "devDependencies": {
+    "supertest": "^7.2.2"
+  }
+}

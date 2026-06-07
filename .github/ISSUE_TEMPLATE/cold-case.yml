@@ -1,0 +1,97 @@
+name: Cold case intake
+description: Propose a cold case using metadata and external links only.
+title: "[cold case] "
+labels: ["cold-case"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Do not attach research payloads, zip files, datasets, checkpoints, or generated archives. Use external links and submitter-provided hashes only.
+  - type: input
+    id: project_target
+    attributes:
+      label: Project target
+      description: The project, model, benchmark, run, or experiment target.
+    validations:
+      required: true
+  - type: dropdown
+    id: failure_class
+    attributes:
+      label: Failure class
+      options:
+        - metric_regression
+        - correctness_failure
+        - reproducibility_failure
+        - resource_exhaustion
+        - safety_boundary
+        - stale_loop
+        - abandoned
+    validations:
+      required: true
+  - type: textarea
+    id: command
+    attributes:
+      label: Command
+      description: The command that reproduced or measured the failure.
+    validations:
+      required: true
+  - type: input
+    id: metric
+    attributes:
+      label: Metric
+      description: The measured result, regression, or failed threshold.
+    validations:
+      required: true
+  - type: textarea
+    id: failure_reason
+    attributes:
+      label: Failure reason
+      description: What failed and why this attempt became a cold case.
+    validations:
+      required: true
+  - type: textarea
+    id: revive_condition
+    attributes:
+      label: Revive condition
+      description: What new evidence, representation, condition, or resource would justify reopening it.
+    validations:
+      required: true
+  - type: textarea
+    id: provenance
+    attributes:
+      label: Provenance
+      description: Where this receipt came from and what boundary applies.
+    validations:
+      required: true
+  - type: input
+    id: repo_url
+    attributes:
+      label: External repo URL
+      placeholder: https://github.com/example/research
+    validations:
+      required: true
+  - type: input
+    id: hosted_zip_url
+    attributes:
+      label: Hosted zip URL
+      description: External artifact location. Do not upload the artifact here.
+    validations:
+      required: true
+  - type: input
+    id: zip_sha256
+    attributes:
+      label: Submitter-provided zip SHA256
+      description: 64-character SHA256 supplied by the submitter, not verified by this service in v1.
+    validations:
+      required: true
+  - type: checkboxes
+    id: boundary
+    attributes:
+      label: Payload boundary
+      options:
+        - label: I did not attach or commit research payloads to this repository.
+          required: true
+        - label: External artifacts are referenced only by URL and submitter-provided SHA256.
+          required: true
+        - label: I understand the service records the hash claim but does not verify it in v1.
+          required: true

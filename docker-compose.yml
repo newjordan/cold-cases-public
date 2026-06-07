@@ -1,0 +1,14 @@
+services:
+  cold-cases:
+    build: .
+    ports:
+      - "3000:3000"
+    env_file:
+      - .env
+    environment:
+      DATABASE_PATH: /data/cold-cases.sqlite
+    volumes:
+      - cold-cases-data:/data
+
+volumes:
+  cold-cases-data:

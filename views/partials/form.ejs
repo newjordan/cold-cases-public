@@ -1,0 +1,37 @@
+<section class="form-page">
+  <h1><%= heading %></h1>
+  <% if (errors.length) { %>
+    <div class="errors">
+      <% errors.forEach((error) => { %><p><%= error %></p><% }) %>
+    </div>
+  <% } %>
+  <p class="form-legend"><span class="req" aria-hidden="true">*</span> required · everything else is optional metadata for scale and discovery.</p>
+  <form class="cert-form" method="post" action="<%= action %>">
+    <label>Project target <span class="req" aria-hidden="true">*</span><input name="projectTarget" value="<%= cert.projectTarget || "" %>" required></label>
+    <label>Client record ID<input name="clientRecordId" value="<%= cert.clientRecordId || "" %>"></label>
+    <label>Project namespace<input name="projectNamespace" value="<%= cert.projectNamespace || "" %>"></label>
+    <label>Run ID<input name="runId" value="<%= cert.runId || "" %>"></label>
+    <label>Tags<input name="tags" value="<%= Array.isArray(cert.tags) ? cert.tags.join(', ') : (cert.tags || '') %>" placeholder="comma-separated"></label>
+    <label>Artifact reference<input name="artifactUri" value="<%= cert.artifactUri || "" %>" placeholder="smb://atlas/cold_case/run.zip or tailnet/local reference"></label>
+    <label>Artifact kind<input name="artifactKind" value="<%= cert.artifactKind || "" %>" placeholder="zip, dataset, log, checkpoint"></label>
+    <label>Artifact label<input name="artifactLabel" value="<%= cert.artifactLabel || "" %>"></label>
+    <label>Artifact size bytes<input name="artifactSizeBytes" value="<%= cert.artifactSizeBytes || "" %>" inputmode="numeric"></label>
+    <label>Research repo URL <span class="req" aria-hidden="true">*</span><input name="repoUrl" value="<%= cert.repoUrl || "" %>" required></label>
+    <label>Hosted zip URL<input name="hostedZipUrl" value="<%= cert.hostedZipUrl || "" %>"></label>
+    <label>Submitter-provided zip SHA256 <span class="req" aria-hidden="true">*</span><input name="zipSha256" value="<%= cert.zipSha256 || "" %>" minlength="64" maxlength="64" required></label>
+    <label>Command <span class="req" aria-hidden="true">*</span><textarea name="command" required><%= cert.command || "" %></textarea></label>
+    <label>Metric <span class="req" aria-hidden="true">*</span><input name="metric" value="<%= cert.metric || "" %>" required></label>
+    <label>Failure class <span class="req" aria-hidden="true">*</span>
+      <select name="failureClass" required>
+        <option value="">Select</option>
+        <% failureClasses.forEach((item) => { %>
+          <option value="<%= item %>" <%= cert.failureClass === item ? "selected" : "" %>><%= item %></option>
+        <% }) %>
+      </select>
+    </label>
+    <label>Failure reason <span class="req" aria-hidden="true">*</span><textarea name="failureReason" required><%= cert.failureReason || "" %></textarea></label>
+    <label>Revive condition <span class="req" aria-hidden="true">*</span><textarea name="reviveCondition" required><%= cert.reviveCondition || "" %></textarea></label>
+    <label>Provenance <span class="req" aria-hidden="true">*</span><textarea name="provenance" required><%= cert.provenance || "" %></textarea></label>
+    <button type="submit" class="button primary">Publish</button>
+  </form>
+</section>

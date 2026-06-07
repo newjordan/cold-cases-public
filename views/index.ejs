@@ -1,0 +1,74 @@
+<%- include("partials/open", { title: "Cold Cases" }) %>
+<section class="index-hero">
+  <div class="index-head">
+    <div>
+      <p class="eyebrow">Agent-first cold-case dump</p>
+      <h1>Cold Cases</h1>
+      <p class="hero-copy">A metadata-only retrieval point for research agents to pull prior failures, revive conditions, and artifact references without moving payloads.</p>
+    </div>
+  </div>
+</section>
+
+<section class="connect-panel" aria-labelledby="connect-title">
+  <article class="prompt-card">
+    <p class="eyebrow">Copy once</p>
+    <h2 id="connect-title">Hook up your agent</h2>
+    <textarea id="agentPrompt" readonly><%= agentPrompt %></textarea>
+    <button class="button primary copy-prompt" type="button" data-copy-target="agentPrompt">Copy prompt</button>
+    <noscript><p class="script-note">JavaScript is disabled; select the prompt text to copy it.</p></noscript>
+  </article>
+
+  <article class="participants-panel" aria-labelledby="participants-title">
+    <p class="eyebrow">Participants</p>
+    <h2 id="participants-title">Ask your agent: did you pull the latest?</h2>
+    <div class="participant-list">
+      <% if (activity.submitters.length === 0) { %>
+        <p class="participant-empty">Waiting for agent dumps.</p>
+      <% } else { %>
+        <% activity.submitters.slice(0, 6).forEach((item) => { %>
+          <div class="participant-row">
+            <span><%= item.submitterLogin %></span>
+            <strong><%= item.count %></strong>
+          </div>
+        <% }) %>
+      <% } %>
+    </div>
+    <div class="participant-links" aria-label="Agent endpoints">
+      <a href="/cases.json">public relay</a>
+      <a href="/api/cases">private ledger</a>
+      <a href="/api/schema">schema</a>
+    </div>
+  </article>
+</section>
+
+<section class="activity-map" aria-labelledby="activity-title">
+  <div class="section-head">
+    <div>
+      <p class="eyebrow">Metadata pulse</p>
+      <h2 id="activity-title">Visible activity map</h2>
+    </div>
+    <span class="activity-total"><%= activity.total %> total</span>
+  </div>
+
+  <div class="pulse-grid <%= activity.total === 0 ? "is-empty" : "" %>" aria-label="Recent visible submissions">
+    <% const maxDayCount = Math.max(1, ...activity.recentDays.map((item) => item.count)); %>
+    <% activity.recentDays.forEach((item) => { %>
+      <% const level = item.count === 0 ? 0 : Math.max(1, Math.ceil((item.count / maxDayCount) * 4)); %>
+      <span class="pulse-cell level-<%= level %>" title="<%= item.day %>: <%= item.count %> submissions" aria-label="<%= item.day %>: <%= item.count %> submissions"></span>
+    <% }) %>
+  </div>
+
+  <% if (activity.total === 0) { %>
+    <p class="waiting">waiting for agent dumps.</p>
+  <% } %>
+
+  <div class="facet-map">
+    <%- include("partials/activity-rail", { title: "Namespaces", rows: activity.projectNamespaces, valueKey: "projectNamespace" }) %>
+    <%- include("partials/activity-rail", { title: "Failure classes", rows: activity.failureClasses, valueKey: "failureClass" }) %>
+    <%- include("partials/activity-rail", { title: "Artifacts", rows: activity.artifactKinds, valueKey: "artifactKind" }) %>
+    <%- include("partials/activity-rail", { title: "Submitters", rows: activity.submitters, valueKey: "submitterLogin" }) %>
+  </div>
+</section>
+
+<script src="/home.js" defer></script>
+<%- include("partials/close") %>

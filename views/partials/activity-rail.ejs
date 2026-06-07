@@ -1,0 +1,20 @@
+<div class="activity-rail">
+  <h3><%= title %></h3>
+  <% if (rows.length === 0) { %>
+    <div class="rail-empty"><span></span><span></span><span></span></div>
+  <% } else { %>
+    <% const railMax = Math.max(1, ...rows.slice(0, 5).map((row) => row.count)); %>
+    <% rows.slice(0, 5).forEach((row) => { %>
+      <% const value = row[valueKey]; %>
+      <div class="rail-row">
+        <div class="rail-label">
+          <span><%= value %></span>
+          <strong><%= row.count %></strong>
+        </div>
+        <div class="rail-track" aria-hidden="true">
+          <span style="width: <%= Math.max(10, Math.round((row.count / railMax) * 100)) %>%"></span>
+        </div>
+      </div>
+    <% }) %>
+  <% } %>
+</div>
