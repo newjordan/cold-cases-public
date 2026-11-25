@@ -1,8 +1,12 @@
 {
   "name": "cold-cases",
-  "version": "1.0.0",
-  "description": "Public index for direct-published research cold cases.",
+  "version": "1.1.0",
+  "description": "Self-hosted metadata ledger for research cold cases.",
   "main": "src/server.js",
+  "private": true,
+  "engines": {
+    "node": ">=22"
+  },
   "scripts": {
     "start": "node src/server.js",
     "build": "node scripts/build-check.js",
@@ -15,16 +19,16 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
-    "better-sqlite3": "^12.10.0",
-    "ejs": "^6.0.1",
-    "express": "^5.2.1",
+    "better-sqlite3": "^13.2.0",
+    "ejs": "^7.0.2",
+    "express": "^5.3.0",
     "express-session": "^1.19.0",
-    "helmet": "^8.2.0",
-    "morgan": "^1.11.0",
+    "helmet": "^8.3.0",
+    "morgan": "^1.12.1",
     "passport": "^0.7.0",
     "passport-github2": "^0.1.12"
   },
   "devDependencies": {
-    "supertest": "^7.2.2"
+    "supertest": "^7.3.2"
   }
 }

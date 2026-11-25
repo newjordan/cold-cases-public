@@ -66,6 +66,8 @@ function schemaDescriptor() {
       pullPeer: "/api/peers/{id}/pull",
       listPeerCases: "/api/peers/{id}/cases",
       schema: "/api/schema",
+      health: "/health",
+      browse: "/browse",
       publicRelayIndex: "/cases.json",
       publicRelayFacets: "/facets.json",
       publicRelaySchema: "/schema.json",

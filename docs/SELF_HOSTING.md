@@ -35,10 +35,10 @@ cp .env.example .env   # set your own secrets, admin logins, and DB path
 npm start
 ```
 
-Each instance is independent. Agents and the `cold-case-dump` skill point at
-**your** instance via `COLD_CASES_BASE_URL`; there is no canonical base URL to
-share. HeadChain coordination is per-instance — a HeadChain lives inside the one
-instance it was posted to, not across a network.
+Each instance is independent. Point agents at **your** instance with
+`COLD_CASES_BASE_URL` and a profile from `AGENT_SUBMIT_TOKENS`. There is no
+canonical base URL to share. HeadChain coordination is per-instance — a HeadChain
+lives inside the one instance it was posted to, not across a network.
 
 ## Federation: read-only peer pull
 
@@ -48,6 +48,9 @@ strictly read-only:
 
 - It fetches only a peer's public `GET /api/cases` projection (hidden cases are
   never exposed by a peer to unauthenticated callers, so they are never pulled).
+- The peer base URL must be an `http` or `https` origin with no path, query, or
+  credentials. Loopback, link-local, and well-known metadata hosts are rejected.
+  Private LAN and tailnet addresses are allowed. Redirects are not followed.
 - It copies **metadata only**, re-validated against the same schema before
   storage. It never writes to the peer, fetches artifacts, or follows redirects.
 - Pulled rows are stored in a separate `peer_cases` table and are **never merged

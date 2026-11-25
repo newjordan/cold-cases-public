@@ -1,0 +1,63 @@
+<%- include("partials/open", { title: "Browse cold cases" }) %>
+<section class="index-head browse-head">
+  <div>
+    <p class="eyebrow">Instance ledger</p>
+    <h1>Browse</h1>
+    <p class="section-copy">Non-hidden records stored on this instance. Publish state <code>private</code> still appears here; only <code>public_relay</code> records are copied into <a href="/cases.json">/cases.json</a>. Hidden records stay off this page unless you are an admin and ask for them.</p>
+  </div>
+  <span class="activity-total"><%= pageInfo.total %> matching</span>
+</section>
+
+<form class="filters" method="get" action="/browse">
+  <label>Search<input name="q" value="<%= filters.q %>" placeholder="target, command, metric"></label>
+  <label>Namespace<input name="projectNamespace" value="<%= filters.projectNamespace %>"></label>
+  <label>Submitter<input name="submitter" value="<%= filters.submitter %>" placeholder="login"></label>
+  <label>Tag<input name="tag" value="<%= filters.tag %>"></label>
+  <label>Failure class
+    <select name="failureClass">
+      <option value="">Any</option>
+      <% failureClasses.forEach((item) => { %>
+        <option value="<%= item %>" <%= filters.failureClass === item ? "selected" : "" %>><%= item %></option>
+      <% }) %>
+    </select>
+  </label>
+  <label>Created on<input type="date" name="date" value="<%= filters.date %>"></label>
+  <% if (isAdmin) { %>
+    <label class="check-label">
+      <input type="checkbox" name="includeHidden" value="1" <%= includeHidden ? "checked" : "" %>>
+      Include hidden
+    </label>
+  <% } %>
+  <button class="button" type="submit">Filter</button>
+</form>
+
+<% if (cases.length === 0) { %>
+  <p class="empty">No cold cases match these filters.</p>
+<% } else { %>
+  <div class="cert-list">
+    <% cases.forEach((item) => { %>
+      <article class="cert-row <%= item.hidden ? "hidden-row" : "" %>">
+        <div class="row-main">
+          <a class="row-title" href="/cases/<%= item.id %>"><%= item.projectTarget %></a>
+          <p class="clamp-2"><%= item.failureReason %></p>
+          <div class="meta">
+            <span><%= item.failureClass %></span>
+            <span>@<%= item.submitterLogin %></span>
+            <% if (item.projectNamespace) { %><span><%= item.projectNamespace %></span><% } %>
+            <span class="badge <%= item.publishState %>"><%= item.publishState %></span>
+            <% if (item.hidden) { %><span>hidden</span><% } %>
+          </div>
+        </div>
+        <time class="hash" datetime="<%= item.createdAt %>"><%= String(item.createdAt).slice(0, 10) %></time>
+      </article>
+    <% }) %>
+  </div>
+<% } %>
+
+<% if (prevHref || nextHref) { %>
+  <nav class="pager" aria-label="Pages">
+    <% if (prevHref) { %><a class="button ghost" href="<%= prevHref %>">Previous</a><% } %>
+    <% if (nextHref) { %><a class="button ghost" href="<%= nextHref %>">Next</a><% } %>
+  </nav>
+<% } %>
+<%- include("partials/close") %>

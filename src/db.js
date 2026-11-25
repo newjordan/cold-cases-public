@@ -66,10 +66,6 @@ function migrate(db) {
       created_at TEXT NOT NULL
     );
 
-    CREATE INDEX IF NOT EXISTS idx_certs_public ON certs(hidden, created_at DESC);
-    CREATE INDEX IF NOT EXISTS idx_certs_search ON certs(project_target, failure_class, submitter_login, repo_url);
-    CREATE INDEX IF NOT EXISTS idx_events_cert ON cert_events(cert_id, id);
-
     CREATE TABLE IF NOT EXISTS headchains (
       chain_id TEXT PRIMARY KEY,
       latest_seq INTEGER NOT NULL DEFAULT 0,
@@ -114,13 +110,6 @@ function migrate(db) {
   addColumnIfMissing(db, "certs", "artifact_label", "TEXT");
   addColumnIfMissing(db, "certs", "artifact_size_bytes", "INTEGER");
   relaxHostedZipUrlNotNull(db);
-  db.exec(`
-    CREATE INDEX IF NOT EXISTS idx_certs_namespace ON certs(project_namespace, run_id, hidden, created_at DESC);
-    CREATE INDEX IF NOT EXISTS idx_certs_artifact_kind ON certs(artifact_kind, hidden, created_at DESC);
-    CREATE INDEX IF NOT EXISTS idx_certs_publish_state ON certs(publish_state, hidden, created_at DESC);
-    CREATE UNIQUE INDEX IF NOT EXISTS idx_certs_client_record ON certs(submitter_login, client_record_id) WHERE client_record_id IS NOT NULL;
-    CREATE UNIQUE INDEX IF NOT EXISTS idx_certs_public_case_id ON certs(public_case_id) WHERE public_case_id IS NOT NULL;
-  `);
 
   // Read-only peer federation. A self-hosted instance may pull the PUBLIC cases of
   // peer instances it chooses to trust. Pulled rows live in their own table and are
@@ -156,6 +145,22 @@ function migrate(db) {
     );
 
     CREATE INDEX IF NOT EXISTS idx_peer_cases_peer ON peer_cases(peer_id, remote_created_at DESC);
+  `);
+  ensureCertIndexes(db);
+}
+
+function ensureCertIndexes(db) {
+  // Recreate these after relaxHostedZipUrlNotNull, which drops and rebuilds `certs`
+  // and takes the indexes created earlier in migrate() with it.
+  db.exec(`
+    CREATE INDEX IF NOT EXISTS idx_certs_public ON certs(hidden, created_at DESC);
+    CREATE INDEX IF NOT EXISTS idx_certs_search ON certs(project_target, failure_class, submitter_login, repo_url);
+    CREATE INDEX IF NOT EXISTS idx_events_cert ON cert_events(cert_id, id);
+    CREATE INDEX IF NOT EXISTS idx_certs_namespace ON certs(project_namespace, run_id, hidden, created_at DESC);
+    CREATE INDEX IF NOT EXISTS idx_certs_artifact_kind ON certs(artifact_kind, hidden, created_at DESC);
+    CREATE INDEX IF NOT EXISTS idx_certs_publish_state ON certs(publish_state, hidden, created_at DESC);
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_certs_client_record ON certs(submitter_login, client_record_id) WHERE client_record_id IS NOT NULL;
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_certs_public_case_id ON certs(public_case_id) WHERE public_case_id IS NOT NULL;
   `);
 }
 
@@ -217,8 +222,8 @@ function relaxHostedZipUrlNotNull(db) {
       )
       SELECT
         id, current_version, hidden, hidden_reason, created_at, updated_at,
-        submitter_login, submitter_id, submitter_avatar_url, 'private',
-        NULL, NULL, NULL, client_record_id,
+        submitter_login, submitter_id, submitter_avatar_url, publish_state,
+        public_case_id, published_at, public_block_reason, client_record_id,
         project_namespace, run_id, tags_json, artifact_uri, artifact_kind,
         artifact_label, artifact_size_bytes, project_target, repo_url,
         hosted_zip_url, zip_sha256, command, metric, failure_class,
@@ -729,40 +734,40 @@ function buildCertWhere(filters = {}, options = {}) {
   if (!options.includeHidden) clauses.push("hidden = 0");
   if (filters.q) {
     clauses.push(`(
-      project_target LIKE @q OR failure_reason LIKE @q OR revive_condition LIKE @q OR
-      command LIKE @q OR metric LIKE @q OR repo_url LIKE @q OR
-      hosted_zip_url LIKE @q OR artifact_uri LIKE @q OR artifact_kind LIKE @q OR
-      artifact_label LIKE @q OR project_namespace LIKE @q OR run_id LIKE @q OR tags_json LIKE @q
+      project_target LIKE @q ESCAPE '\\' OR failure_reason LIKE @q ESCAPE '\\' OR revive_condition LIKE @q ESCAPE '\\' OR
+      command LIKE @q ESCAPE '\\' OR metric LIKE @q ESCAPE '\\' OR repo_url LIKE @q ESCAPE '\\' OR
+      hosted_zip_url LIKE @q ESCAPE '\\' OR artifact_uri LIKE @q ESCAPE '\\' OR artifact_kind LIKE @q ESCAPE '\\' OR
+      artifact_label LIKE @q ESCAPE '\\' OR project_namespace LIKE @q ESCAPE '\\' OR run_id LIKE @q ESCAPE '\\' OR tags_json LIKE @q ESCAPE '\\'
     )`);
-    params.q = `%${filters.q}%`;
+    params.q = `%${escapeLike(filters.q)}%`;
   }
   if (filters.projectTarget) {
-    clauses.push("project_target LIKE @projectTarget");
-    params.projectTarget = `%${filters.projectTarget}%`;
+    clauses.push("project_target LIKE @projectTarget ESCAPE '\\'");
+    params.projectTarget = `%${escapeLike(filters.projectTarget)}%`;
   }
   if (filters.failureClass) {
     clauses.push("failure_class = @failureClass");
     params.failureClass = filters.failureClass;
   }
   if (filters.projectNamespace) {
-    clauses.push("project_namespace LIKE @projectNamespace");
-    params.projectNamespace = `%${filters.projectNamespace}%`;
+    clauses.push("project_namespace LIKE @projectNamespace ESCAPE '\\'");
+    params.projectNamespace = `%${escapeLike(filters.projectNamespace)}%`;
   }
   if (filters.runId) {
-    clauses.push("run_id LIKE @runId");
-    params.runId = `%${filters.runId}%`;
+    clauses.push("run_id LIKE @runId ESCAPE '\\'");
+    params.runId = `%${escapeLike(filters.runId)}%`;
   }
   if (filters.tag) {
-    clauses.push("tags_json LIKE @tag");
-    params.tag = `%"${String(filters.tag).toLowerCase()}"%`;
+    clauses.push("tags_json LIKE @tag ESCAPE '\\'");
+    params.tag = `%"${escapeLike(String(filters.tag).toLowerCase())}"%`;
   }
   if (filters.submitter) {
-    clauses.push("submitter_login LIKE @submitter");
-    params.submitter = `%${filters.submitter}%`;
+    clauses.push("submitter_login LIKE @submitter ESCAPE '\\'");
+    params.submitter = `%${escapeLike(filters.submitter)}%`;
   }
   if (filters.repo) {
-    clauses.push("repo_url LIKE @repo");
-    params.repo = `%${filters.repo}%`;
+    clauses.push("repo_url LIKE @repo ESCAPE '\\'");
+    params.repo = `%${escapeLike(filters.repo)}%`;
   }
   if (filters.artifactKind) {
     clauses.push("artifact_kind = @artifactKind");
@@ -774,6 +779,10 @@ function buildCertWhere(filters = {}, options = {}) {
   }
 
   return { clauses, params };
+}
+
+function escapeLike(value) {
+  return String(value).replace(/[\\%_]/g, (char) => `\\${char}`);
 }
 
 function clampInt(value, fallback, min, max) {
@@ -802,6 +811,14 @@ function getCert(db, id, options = {}) {
   `).all(id);
   cert.canonicalJson = cert.versions.at(-1)?.canonicalJson || "{}";
   return cert;
+}
+
+function getCertByPublicCaseId(db, publicCaseId) {
+  const row = db.prepare(`
+    SELECT * FROM certs
+    WHERE public_case_id = ? AND hidden = 0 AND publish_state = 'public_relay'
+  `).get(publicCaseId);
+  return row ? mapCertRow(row) : null;
 }
 
 function getCertByClientRecordId(db, submitterLogin, clientRecordId, options = {}) {
@@ -1041,6 +1058,7 @@ module.exports = {
   countPeerCases,
   createCert,
   getCert,
+  getCertByPublicCaseId,
   getHeadChain,
   getHeadChainLatest,
   getPeer,

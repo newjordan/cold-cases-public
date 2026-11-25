@@ -164,6 +164,9 @@ test("legacy databases can store artifact-only references after migration", asyn
 
   assert.equal(response.body.case.hostedZipUrl, null);
   assert.equal(response.body.case.artifactUri, "smb://atlas/cold_case/ecc/run-17.zip");
+  const indexNames = db.prepare("SELECT name FROM sqlite_master WHERE type = 'index' AND tbl_name = 'certs'").all().map((row) => row.name);
+  assert.ok(indexNames.includes("idx_certs_public"));
+  assert.ok(indexNames.includes("idx_certs_search"));
   db.close();
   fs.rmSync(dir, { recursive: true, force: true });
 });
@@ -538,7 +541,9 @@ test("admin hide removes cold case from default index but keeps audit available 
   await login(admin, "admin");
 
   const created = await submitter.post("/api/cases").send(VALID_CERT).expect(201);
-  await admin.post(`/cases/${created.body.case.id}/hide`).send({ reason: "spam" }).expect(302);
+  const page = await admin.get(`/cases/${created.body.case.id}`).expect(200);
+  const token = page.text.match(/name="_csrf" value="([a-f0-9]+)"/)[1];
+  await admin.post(`/cases/${created.body.case.id}/hide`).send({ reason: "spam", _csrf: token }).expect(302);
 
   const publicIndex = await request(app).get("/api/cases").expect(200);
   assert.equal(publicIndex.body.cases.length, 0);
@@ -583,7 +588,10 @@ test("peer pull mirrors a peer's public cases without merging into local certs",
 
   const local = fixture();
   const peer = addPeer(local.db, { baseUrl: "https://peer.example/", label: "peer one" });
-  const result = await pullPeer(local.db, peer.id, { fetchImpl: bridgeFetch(peerInstance.app) });
+  const result = await pullPeer(local.db, peer.id, {
+    fetchImpl: bridgeFetch(peerInstance.app),
+    lookupImpl: async () => [{ address: "203.0.113.10", family: 4 }]
+  });
   assert.equal(result.ok, true);
   assert.equal(result.pulled, 1);
   assert.equal(result.rejected, 0);

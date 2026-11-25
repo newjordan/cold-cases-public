@@ -4,7 +4,13 @@
     <div>
       <p class="eyebrow">Cold case receipt</p>
       <h1><%= cert.projectTarget %></h1>
-      <p class="meta-line">Version <%= cert.currentVersion %> · submitted by @<%= cert.submitterLogin %> · <%= new Date(cert.createdAt).toLocaleString() %></p>
+      <p class="meta-line">Version <%= cert.currentVersion %> · submitted by @<%= cert.submitterLogin %> · <time datetime="<%= cert.createdAt %>"><%= new Date(cert.createdAt).toLocaleString() %></time></p>
+      <p class="meta-line">
+        <span class="badge <%= cert.publishState %>"><%= cert.publishState %></span>
+        <% if (cert.publicCaseId) { %>
+          · <a href="/cases/<%= cert.publicCaseId %>.json">Public relay JSON</a>
+        <% } %>
+      </p>
       <p class="meta-line">
         <a href="/api/cases/<%= cert.id %>">API JSON</a>
         ·
@@ -18,6 +24,11 @@
 
   <% if (cert.hidden) { %>
     <div class="notice">Hidden by admin. Reason: <%= cert.hiddenReason || "not specified" %></div>
+  <% } %>
+  <% if (publishErrors && publishErrors.length) { %>
+    <div class="errors" role="alert">
+      <% publishErrors.forEach((error) => { %><p><%= error %></p><% }) %>
+    </div>
   <% } %>
 
   <dl class="receipt-grid">
@@ -35,14 +46,17 @@
     <div><dt>Failure reason</dt><dd><%= cert.failureReason %></dd></div>
     <div><dt>Revive condition</dt><dd><%= cert.reviveCondition %></dd></div>
     <div><dt>Provenance</dt><dd><%= cert.provenance %></dd></div>
-    <div><dt>Research repo</dt><dd><a href="<%= cert.repoUrl %>" rel="nofollow ugc"><%= cert.repoUrl %></a></dd></div>
-    <div><dt>Hosted zip</dt><dd><% if (cert.hostedZipUrl) { %><a href="<%= cert.hostedZipUrl %>" rel="nofollow ugc"><%= cert.hostedZipUrl %></a><% } else { %>not supplied<% } %></dd></div>
-    <div><dt>Submitter-provided zip SHA256</dt><dd><code class="wrap"><%= cert.zipSha256 %></code></dd></div>
+    <div><dt>Research repo</dt><dd><a href="<%= cert.repoUrl %>" rel="nofollow ugc noopener noreferrer"><%= cert.repoUrl %></a></dd></div>
+    <div><dt>Hosted zip</dt><dd><% if (cert.hostedZipUrl) { %><a href="<%= cert.hostedZipUrl %>" rel="nofollow ugc noopener noreferrer"><%= cert.hostedZipUrl %></a><% } else { %>not supplied<% } %></dd></div>
+    <div class="wide"><dt>Submitter-provided zip SHA256</dt><dd><code class="wrap"><%= cert.zipSha256 %></code><span class="field-hint">Not verified by this instance.</span></dd></div>
   </dl>
 
   <section>
-    <h2>Canonical JSON</h2>
-    <pre class="json"><code><%= cert.canonicalJson %></code></pre>
+    <div class="section-head">
+      <h2>Canonical JSON</h2>
+      <button class="button ghost" type="button" data-copy-for="canonicalJson">Copy JSON</button>
+    </div>
+    <pre class="json" id="canonicalJson"><code><%= cert.canonicalJson %></code></pre>
   </section>
 
   <section>
@@ -53,15 +67,35 @@
           <strong><%= event.eventType %></strong>
           <% if (event.version) { %>v<%= event.version %><% } %>
           by @<%= event.actorLogin %>
-          on <%= new Date(event.createdAt).toLocaleString() %>
+          on <time datetime="<%= event.createdAt %>"><%= new Date(event.createdAt).toLocaleString() %></time>
           <% if (event.reason) { %><span> · <%= event.reason %></span><% } %>
         </li>
       <% }) %>
     </ol>
   </section>
 
+  <% if (isAdmin) { %>
+    <form class="hide-form publish-form" method="post" action="/cases/<%= cert.id %>/publish">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+      <label>
+        Publish state
+        <select name="state">
+          <% ["private", "public_pending", "public_relay", "public_blocked"].forEach((state) => { %>
+            <option value="<%= state %>" <%= cert.publishState === state ? "selected" : "" %>><%= state %></option>
+          <% }) %>
+        </select>
+      </label>
+      <label>
+        Block reason
+        <input name="reason" value="<%= cert.publicBlockReason || "" %>" placeholder="required context when blocking">
+      </label>
+      <button type="submit" class="button">Update publish state</button>
+    </form>
+  <% } %>
+
   <% if (isAdmin && !cert.hidden) { %>
     <form class="hide-form" method="post" action="/cases/<%= cert.id %>/hide">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
       <label>
         Hide reason
         <input name="reason" placeholder="spam or abuse reason">
