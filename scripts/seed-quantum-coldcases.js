@@ -1,15 +1,13 @@
 #!/usr/bin/env node
-// Seeds REAL cold cases transcribed from the ecdsafail-challenge (quantum_ec) project's
-// documented failed/abandoned attempts. No fabricated data: every command, metric, failure
-// reason, and revive condition is transcribed from the source files below, and every
-// `zipSha256` is computed here from the real referenced evidence file at submit time.
+// Posts cold cases transcribed from the ecdsafail-challenge (quantum_ec) notes.
+// The evidence files are not in this repository. Pass their paths in the environment.
+// Each zipSha256 is the SHA-256 of the file named by that record, computed at submit time.
 //
 // Usage:
-//   COLD_CASES_BASE_URL=http://127.0.0.1:3001 \
+//   COLD_CASES_BASE_URL=http://127.0.0.1:3000 \
 //   COLD_CASES_AGENT_TOKEN=replace-with-agent-token \
 //   QUANTUM_EC_ATTEMPTS_LOG=/path/to/creative_attempts_log.md \
 //   QUANTUM_EC_CLIFF_DOC=/path/to/CLIFF.md \
-//   QUANTUM_EC_OPS_BIN=/path/to/ops.bin \
 //   node scripts/seed-quantum-coldcases.js
 //
 // Idempotent: each record carries a stable clientRecordId, so re-running returns the
@@ -18,13 +16,7 @@
 const crypto = require("node:crypto");
 const fs = require("node:fs");
 
-const BASE_URL = requiredEnv("COLD_CASES_BASE_URL").replace(/\/+$/, "");
-const TOKEN = requiredEnv("COLD_CASES_AGENT_TOKEN");
 const REPO_URL = "https://github.com/ecdsafail/ecdsafail-challenge";
-
-const ATTEMPTS_LOG = requiredEnv("QUANTUM_EC_ATTEMPTS_LOG");
-const CLIFF_DOC = requiredEnv("QUANTUM_EC_CLIFF_DOC");
-const OPS_BIN = requiredEnv("QUANTUM_EC_OPS_BIN");
 
 function requiredEnv(name) {
   const value = process.env[name];
@@ -47,7 +39,7 @@ const PROVENANCE =
 const RECORDS = [
   {
     clientRecordId: "quantum-ec/attempt-1-mhist-hmr",
-    source: ATTEMPTS_LOG,
+    sourceEnv: "QUANTUM_EC_ATTEMPTS_LOG",
     projectTarget: "secp256k1 affine point-add — classical m_hist via HMR + phase correction",
     failureClass: "correctness_failure",
     command: "./benchmark.sh   # _mc forward/backward variants: HMR after step 2 + cz_if phase corrections",
@@ -63,7 +55,7 @@ const RECORDS = [
   },
   {
     clientRecordId: "quantum-ec/attempt-2-step9-removal",
-    source: ATTEMPTS_LOG,
+    sourceEnv: "QUANTUM_EC_ATTEMPTS_LOG",
     projectTarget: "secp256k1 affine point-add — step-9 cswap removal with persistent a_f",
     failureClass: "correctness_failure",
     command: "./benchmark.sh   # remove redundant swap-back cswap at end of each Kaliski iter",
@@ -79,7 +71,7 @@ const RECORDS = [
   },
   {
     clientRecordId: "quantum-ec/attempt-3-rowwise-mul",
-    source: ATTEMPTS_LOG,
+    sourceEnv: "QUANTUM_EC_ATTEMPTS_LOG",
     projectTarget: "secp256k1 affine point-add — rowwise schoolbook mul (n-wide tmp vs 2n)",
     failureClass: "metric_regression",
     command: "KAL_ROWWISE_MUL=1 ./benchmark.sh   # mod_mul_add_rowwise_into_acc via cmod_add_qq + mod_double_inplace_fast",
@@ -95,7 +87,7 @@ const RECORDS = [
   },
   {
     clientRecordId: "quantum-ec/attempt-4-nonfast-cuccaro",
-    source: ATTEMPTS_LOG,
+    sourceEnv: "QUANTUM_EC_ATTEMPTS_LOG",
     projectTarget: "secp256k1 affine point-add — non-fast cuccaro in backward step 4",
     failureClass: "metric_regression",
     command: "./benchmark.sh   # cuccaro_sub/add (no carry ancilla) in place of _fast variants at backward step 4",
@@ -110,7 +102,7 @@ const RECORDS = [
   },
   {
     clientRecordId: "quantum-ec/attempt-6-jacobian",
-    source: ATTEMPTS_LOG,
+    sourceEnv: "QUANTUM_EC_ATTEMPTS_LOG",
     projectTarget: "secp256k1 point-add — internal Jacobian coordinates to drop one inversion",
     failureClass: "metric_regression",
     command: "./benchmark.sh   # Jacobian add (4 muls + 3 squarings) + 1 Kaliski + 2 muls for affine conversion",
@@ -126,7 +118,7 @@ const RECORDS = [
   },
   {
     clientRecordId: "quantum-ec/attempt-7-coset",
-    source: ATTEMPTS_LOG,
+    sourceEnv: "QUANTUM_EC_ATTEMPTS_LOG",
     projectTarget: "secp256k1 point-add — coset representation (Zalka / Gidney-Ekera 2021)",
     failureClass: "abandoned",
     command: "design-only (not implemented) — coset modular arithmetic, target 2n -> ~1.5n CCX modular add",
@@ -144,7 +136,7 @@ const RECORDS = [
   },
   {
     clientRecordId: "quantum-ec/attempt-9-iter-floor",
-    source: ATTEMPTS_LOG,
+    sourceEnv: "QUANTUM_EC_ATTEMPTS_LOG",
     projectTarget: "secp256k1 point-add — fewer Kaliski iterations (sub-400 GCD steps)",
     failureClass: "abandoned",
     command: "./benchmark.sh   # sweep active iteration counts: 405, 401, 390",
@@ -160,7 +152,7 @@ const RECORDS = [
   },
   {
     clientRecordId: "quantum-ec/correctability-cliff",
-    source: CLIFF_DOC,
+    sourceEnv: "QUANTUM_EC_CLIFF_DOC",
     projectTarget: "secp256k1 point-add — lossy sub-frontier score reduction (GPU island scan)",
     failureClass: "abandoned",
     command: "gpu_scout island scanner — full 0/0/0 survival, real rng, N=8192, batch-0 survival",
@@ -177,14 +169,15 @@ const RECORDS = [
   }
 ];
 
-async function submit(record) {
-  const zipSha256 = sha256OfFile(record.source);
+async function submit(record, baseUrl, token) {
+  const sourcePath = requiredEnv(record.sourceEnv);
+  const zipSha256 = sha256OfFile(sourcePath);
   const payload = {
     projectTarget: record.projectTarget,
     repoUrl: REPO_URL,
-    artifactUri: `file://${record.source}`,
-    artifactKind: record.source.endsWith(".md") ? "log" : "binary",
-    artifactLabel: record.source.split("/").pop(),
+    artifactUri: `file://${sourcePath}`,
+    artifactKind: sourcePath.endsWith(".md") ? "log" : "binary",
+    artifactLabel: sourcePath.split("/").pop(),
     zipSha256,
     command: record.command,
     metric: record.metric,
@@ -198,11 +191,11 @@ async function submit(record) {
     tags: record.tags
   };
 
-  const res = await fetch(`${BASE_URL}/api/cases`, {
+  const res = await fetch(`${baseUrl}/api/cases`, {
     method: "POST",
     headers: {
       "content-type": "application/json",
-      authorization: `Bearer ${TOKEN}`
+      authorization: `Bearer ${token}`
     },
     body: JSON.stringify(payload)
   });
@@ -216,19 +209,28 @@ async function submit(record) {
   return id;
 }
 
-(async () => {
-  console.log(`Seeding ${RECORDS.length} real cold cases -> ${BASE_URL}/api/cases (agent token)\n`);
-  // ops.bin sha is referenced in provenance discussions but not required per-record here.
-  void OPS_BIN;
+async function main() {
+  const baseUrl = requiredEnv("COLD_CASES_BASE_URL").replace(/\/+$/, "");
+  const token = requiredEnv("COLD_CASES_AGENT_TOKEN");
+  console.log(`Seeding ${RECORDS.length} cold cases -> ${baseUrl}/api/cases (agent token)\n`);
   let ok = 0;
   for (const record of RECORDS) {
     try {
-      await submit(record);
+      await submit(record, baseUrl, token);
       ok += 1;
     } catch (error) {
       console.error(`  FAILED ${error.message}`);
     }
   }
   console.log(`\nDone: ${ok}/${RECORDS.length} submitted.`);
-  process.exit(ok === RECORDS.length ? 0 : 1);
-})();
+  process.exitCode = ok === RECORDS.length ? 0 : 1;
+}
+
+if (require.main === module) {
+  main().catch((error) => {
+    console.error(error.message);
+    process.exit(1);
+  });
+}
+
+module.exports = { RECORDS };

@@ -8,6 +8,7 @@
 
   buttons.forEach((button) => {
     const originalText = button.textContent;
+    button.setAttribute("aria-live", "polite");
 
     button.addEventListener("click", async () => {
       let text = "";

@@ -1,6 +1,6 @@
 # Contributing Cold Cases
 
-This repository is a private coordination surface for cold-case metadata and review work. It is not an artifact host.
+This repository coordinates cold-case metadata and review work. It is not an artifact host.
 
 ## What Belongs Here
 
@@ -16,7 +16,7 @@ This repository is a private coordination surface for cold-case metadata and rev
 
 ## Cold-Case Intake
 
-Agents should use `.codex/skills/cold-case-dump` when available.
+Agents submit metadata to the operator's `POST /api/cases` endpoint with a bearer token from `AGENT_SUBMIT_TOKENS`. There is no repo-local agent skill in this repository.
 
 Each cold-case submission should include:
 

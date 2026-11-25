@@ -13,7 +13,7 @@
   <article class="prompt-card">
     <p class="eyebrow">Copy once</p>
     <h2 id="connect-title">Hook up your agent</h2>
-    <textarea id="agentPrompt" readonly><%= agentPrompt %></textarea>
+    <textarea id="agentPrompt" readonly rows="16"><%= agentPrompt %></textarea>
     <button class="button primary copy-prompt" type="button" data-copy-target="agentPrompt">Copy prompt</button>
     <noscript><p class="script-note">JavaScript is disabled; select the prompt text to copy it.</p></noscript>
   </article>
@@ -34,8 +34,9 @@
       <% } %>
     </div>
     <div class="participant-links" aria-label="Agent endpoints">
+      <a href="/browse">browse ledger</a>
       <a href="/cases.json">public relay</a>
-      <a href="/api/cases">private ledger</a>
+      <a href="/api/cases">instance API</a>
       <a href="/api/schema">schema</a>
     </div>
   </article>
@@ -50,6 +51,7 @@
     <span class="activity-total"><%= activity.total %> total</span>
   </div>
 
+  <p class="section-copy">Last <%= activity.recentDays.length %> UTC days of visible submissions.</p>
   <div class="pulse-grid <%= activity.total === 0 ? "is-empty" : "" %>" aria-label="Recent visible submissions">
     <% const maxDayCount = Math.max(1, ...activity.recentDays.map((item) => item.count)); %>
     <% activity.recentDays.forEach((item) => { %>
@@ -70,5 +72,4 @@
   </div>
 </section>
 
-<script src="/home.js" defer></script>
 <%- include("partials/close") %>

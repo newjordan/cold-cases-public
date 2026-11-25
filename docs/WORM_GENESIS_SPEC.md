@@ -9,7 +9,7 @@ re-running known dead-ends. Metadata only — no payloads, code, or weights ever
 
 ## 1. What the worm IS
 
-The worm is a **HeadChain** (existing protocol, `.codex/skills/cold-case-dump/references/headchain.md`):
+The worm is a **HeadChain** (the `/api/headchains/{chainId}` protocol documented in the README):
 a linear chain of *heads*, each embedding one valid Cold Case payload, linked by `prevHeadHash`
 (server computes `headHash`). Every 10 accepted heads auto-dump into 10 Cold Case records.
 

@@ -30,7 +30,7 @@ The service may record:
 
 ## GitHub Use
 
-This private repository may be used to coordinate code changes and metadata review. It should not be used as bulk storage for cold-case artifacts. If a contributor needs to reference payloads, they should provide artifact references and hashes only.
+This repository may be used to coordinate code changes and metadata review. It should not be used as bulk storage for cold-case artifacts. If a contributor needs to reference payloads, they should provide artifact references and hashes only.
 
 ## Review Checklist
 
